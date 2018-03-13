@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Built-By: xiongjun
+Build-Jdk: 1.8.0_51
+Created-By: Maven Integration for Eclipse
+Extension-Name: egrant-compare-new
+Weblogic-Application-Version: egrant-compare-new dev
+

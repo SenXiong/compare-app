@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd"
+	default-lazy-init="true">
+	<description>Redis config</description>
+
+	<!-- RedisPoolConfig -->
+	<bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+		<property name="maxTotal" value="5000"></property>
+		<property name="maxIdle" value="500"></property>
+		<property name="minIdle" value="50"></property>
+		<property name="maxWaitMillis" value="15000"></property>
+		<property name="minEvictableIdleTimeMillis" value="300000"></property>
+		<property name="numTestsPerEvictionRun" value="3"></property>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"></property>
+		<property name="testOnBorrow" value="true"></property>
+		<property name="testOnReturn" value="true"></property>
+		<property name="testWhileIdle" value="true"></property>
+	</bean>
+
+	<!-- jedisConnectionFactory -->
+	<bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory" destroy-method="destroy"  >
+		<property name="poolConfig" ref="jedisPoolConfig" />
+		<property name="hostName" value="${redis.host}" />
+		<property name="port" value="${redis.port}" />
+		<property name="timeout" value="15000" />
+		<property name="database" value="${redis.database}" />
+		<property name="password" value="${redis.password}" />
+		<property name="usePool" value="true" />
+	</bean>
+	
+	<!--TransactionSupport Redis template -->
+	<bean id="redisTemplateTx" class="org.springframework.data.redis.core.RedisTemplate">
+		<property name="connectionFactory" ref="jedisConnectionFactory"></property>
+		<property name="enableTransactionSupport" value="true"></property>
+		<property name="keySerializer">
+			<bean class="org.springframework.data.redis.serializer.StringRedisSerializer" />
+		</property>
+		<property name="valueSerializer">
+			<bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer" />
+		</property>
+		<property name="hashKeySerializer">
+			<bean class="org.springframework.data.redis.serializer.StringRedisSerializer" />
+		</property>
+		<property name="hashValueSerializer">
+			<bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer" />
+		</property>
+	</bean>
+
+	<!--No TransactionSupport Redis template -->
+	 <bean id="redisTemplateNoTx" class="org.springframework.data.redis.core.RedisTemplate"  > 
+		  <property name="connectionFactory" ref="jedisConnectionFactory"></property> 
+			<property name="keySerializer"><bean class="org.springframework.data.redis.serializer.StringRedisSerializer"  /></property> 
+			<property name="valueSerializer"><bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"  /></property> 
+			<property name="hashKeySerializer"><bean class="org.springframework.data.redis.serializer.StringRedisSerializer"  /></property> 
+			<property name="hashValueSerializer"><bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"  /></property> 
+		</bean> 
+		
+</beans>

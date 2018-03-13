@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd"
+	default-lazy-init="true">
+ 	
+    <bean id="redisMessageListenerContainer" class="org.springframework.data.redis.listener.RedisMessageListenerContainer" destroy-method="destroy">  
+        <property name="connectionFactory" ref="jedisConnectionFactory" />  
+       <!--  <property name="taskExecutor">
+            <bean class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler">  
+                <property name="poolSize" value="1"></property>  
+            </bean>  
+        </property> -->
+        <property name="messageListeners">  
+            <map> 
+     			       <!-- 项目内容比对 --> 
+                <entry key-ref="compareDataInitService">  
+                    <bean class="org.springframework.data.redis.listener.ChannelTopic">  
+                        <constructor-arg value="DATA_INIT_CHANNEL"/>  
+                    </bean>  
+                </entry>  
+                <entry key-ref="compareDataFilterService">  
+                    <bean class="org.springframework.data.redis.listener.ChannelTopic">  
+                        <constructor-arg value="DATA_FILTER_CHANNEL"/>  
+                    </bean>  
+                </entry>  
+                <entry key-ref="compareDataSimiliarService">  
+                    <bean class="org.springframework.data.redis.listener.ChannelTopic">  
+                        <constructor-arg value="DATA_SIMILIAR_CHANNEL"/>  
+                    </bean>  
+                </entry>  
+                <entry key-ref="compareDataResultSyncService">  
+                    <bean class="org.springframework.data.redis.listener.ChannelTopic">  
+                        <constructor-arg value="DATA_RESULT_SYNC_CHANNEL"/>  
+                    </bean>  
+                </entry>  
+                  <!--  规则 -->
+                <entry key-ref="proposalRuleCheckService">  
+                    <bean class="org.springframework.data.redis.listener.ChannelTopic">  
+                        <constructor-arg value="RULE_CHECK_CHANNEL"/>  
+                    </bean>  
+                </entry>  
+            </map>
+        </property>  
+    </bean> 
+ 
+</beans>

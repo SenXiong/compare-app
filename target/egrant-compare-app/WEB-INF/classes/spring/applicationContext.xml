@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans default-lazy-init="true"
+	xmlns="http://www.springframework.org/schema/beans"  
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xmlns:p="http://www.springframework.org/schema/p" 
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd 
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd  
+  http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+  http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-3.1.xsd">
+
+	<description>Spring公共配置文件 </description>
+	<context:annotation-config />
+	<aop:aspectj-autoproxy />
+
+	<!-- 定义PropertyPlaceholderConfigurer -->
+	<bean id="propertyPlaceholderConfigurer" class="org.springframework.beans.factory.config.DynamicServerConfig">
+		<property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE" />
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="locations">
+			<list>
+				<value>classpath:config/system.common.properties</value>
+				<value>classpath:config/system.linuxdev.properties</value>
+				<value>classpath:config/system.development.properties</value>
+				<value>classpath:config/system.test.properties</value>
+				<value>classpath:config/system.run.properties</value>
+			</list>
+		</property>
+	</bean>
+	
+		<!-- 服务工厂 -->	
+	<bean id="serviceFactory" class="com.iris.egrant.core.sf.LocalServiceFactory" />
+	
+	<bean id="appSettingContext" class="com.iris.egrant.code.compare.service.AppSettingContext"  lazy-init="false"></bean>
+	
+	<!-- 支持 spring 的注解缓存 -->
+	<bean id="ehCacheCacheManager" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean" p:configLocation="classpath:ehcache.xml" p:shared="true" />
+	<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager" p:cacheManager-ref="ehCacheCacheManager" />
+	<cache:annotation-driven cache-manager="cacheManager" />
+	
+	
+</beans>

@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven
+Built-By: iris
+Build-Jdk: 1.8.0_51
+Extension-Name: egrant-compare-new
+Weblogic-Application-Version: egrant-compare-new dev
+

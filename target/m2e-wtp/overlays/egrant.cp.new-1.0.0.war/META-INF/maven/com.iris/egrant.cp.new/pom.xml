@@ -1,0 +1,23 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>egrant.cp.new</artifactId>
+	<packaging>war</packaging>
+	<name>egrant.cp.new war</name>
+	<parent>
+		<groupId>com.iris</groupId>
+		<artifactId>egrant.cp.parent</artifactId>
+ 		<version>1.0.0</version>
+ 		<relativePath>../parent/pom.xml</relativePath>
+	</parent>
+	<dependencies>
+ 		 <dependency>
+			 <groupId>com.iris</groupId>
+			 <artifactId>egrant.cp.code</artifactId>
+	 		 <version>1.0.0</version>
+ 		 </dependency>
+	</dependencies>
+	<build>
+		<finalName>egrant-compare-new</finalName>
+	</build>
+</project>

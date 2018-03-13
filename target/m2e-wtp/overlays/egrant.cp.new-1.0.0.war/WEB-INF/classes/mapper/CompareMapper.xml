@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Compare">
+
+	<resultMap id="dataSummaryVoMap" type="com.iris.egrant.schedule.master.model.DataSummaryVO" >
+		<result property="minKeyCode" column="min_key_code" />
+		<result property="maxKeyCode" column="max_key_code" />
+		<result property="count" column="count" />
+	</resultMap>
+	
+	<resultMap id="compareResultVOMap" type="com.iris.egrant.code.compare.model.CompareResultVO" >
+		<result property="resultId" column="result_id" />
+		<result property="sourceId" column="source_id" />
+		<result property="targetId" column="target_id" />
+		<result property="dataType" column="data_type" />
+		<result property="sourceContent" column="source_content" javaType="java.lang.String" />
+		<result property="targetContent" column="target_content" javaType="java.lang.String"  />
+	</resultMap> 
+	
+	<resultMap id="compareResultSyncVOMap" type="com.iris.egrant.code.compare.model.CompareResultSyncVO" >
+		<result property="prpCode" column="prp_code" />
+		<result property="type" column="type" />
+	</resultMap> 
+	
+	<sql id="getSummaryPrefix">
+		 select 
+	      max(v2.id)  as max_key_code,
+        min(v2.id) as   min_key_code,
+        count(1) as count
+     from  
+          (
+      select v.id , rownum as rn 
+       from
+      			(
+	</sql>
+	
+	<sql id="getSummarySubfix" >
+		    ) v 
+      ) v2
+    where v2.rn  <![CDATA[ <= ]]> ${totalSize} 
+	</sql>
+	
+    <!-- 数据拆分 -->
+	<select id="getDataInitSummaryVo" resultMap="dataSummaryVoMap" 	parameterType="map">
+	   	<include refid="getSummaryPrefix" />
+	        select  t.id 
+	          from compare_source t
+	         where 1 = 1
+	           and t.status = '0' 
+	           <if test="startKeyCode != null">
+	            and t.id <![CDATA[ >= ]]>  ${startKeyCode}
+	           </if>
+	         order by t.id asc
+       <include refid="getSummarySubfix" />
+	</select>
+	
+	<!-- 数据solr过滤 -->
+	<select id="getDataFilterSummaryVo" resultMap="dataSummaryVoMap" 	parameterType="map">
+	   	<include refid="getSummaryPrefix" />
+	      select distinct t.key_code  as id 
+            from compare_list t
+          where 1 = 1
+           and t.status = '0' 
+           <if test="startKeyCode != null">
+	            and t.key_code <![CDATA[ >= ]]>  ${startKeyCode}
+	         </if>
+           order by  t.key_code  asc
+       <include refid="getSummarySubfix" />
+	</select>
+	
+	<!-- 数据比较 -->
+	<select id="getDataSimiliarSummaryVo" resultMap="dataSummaryVoMap" 	parameterType="map">
+	   	<include refid="getSummaryPrefix" />
+	        select t.id 
+	          from compare_result t
+	        where 1 = 1
+	         and t.status = '0' 
+	         <if test="startKeyCode != null">
+	            and t.id <![CDATA[ >= ]]>  ${startKeyCode}
+	         </if>
+	         order by t.id asc
+       <include refid="getSummarySubfix" />
+	</select>
+	
+	<!--  结果同步 -->
+	<select id="getDataResultSyncSummaryVo" resultMap="dataSummaryVoMap" 	parameterType="map">
+	   	<include refid="getSummaryPrefix" />
+	        select v.id 
+	          from  ( 
+		                 select type, prp_code as id from 
+		                 					(
+		          					  			<include refid="prpCodeTypeTable"></include>
+		          					 	 	)
+	          		 	) v
+	        where 1 = 1
+	        <!--  and t.status = '0'  -->
+	         <if test="startKeyCode != null">
+	            and v.id <![CDATA[ >= ]]>  ${startKeyCode}
+	         </if>
+	         order by v.id asc
+       <include refid="getSummarySubfix" />
+	</select>
+	
+	<!-- 待同步比对结果 集 -->
+	<sql id="prpCodeTypeTable">
+					 select distinct '2' as type, to_char(t.prp_code) as prp_code
+									     from proposal_extend t
+															 where 1 = 1
+															   and t.compare_rule_familiar_cnt = '-1'
+															   and not exists (select 1
+															          from prp_rule_check_result prcr
+															         where prcr.prp_code = t.prp_code
+															           and prcr.vallidate_type = 0
+															           and prcr.is_restore = 0)
+												union 
+															select '3' as type, to_char(t.prp_code) as prp_code
+															  from proposal_extend t
+															 where 1 = 1
+															   and t.compare_prp_familiar_cnt = '-1'
+															   and not exists (select 1 from compare_result where status = 0)
+											 union 
+															select  '3' as type , to_char(pe.prp_code) as prp_code
+															  from proposal_extend pe
+															  left join proposal p
+															    on pe.prp_code = p.prp_code
+															 where 1=1
+													      and pe.compare_prp_familiar_cnt = 0   <!-- 原逻辑 暂保留  -->
+															   and exists
+															 (select 1
+															          from prp_compare_result t
+															         where (t.prp_code1 = pe.prp_code or t.prp_code2 = pe.prp_code))
+															   and p.prj_stat_year = (select app.value
+															                            from application_setting app
+															                           where app.key = 'stat_year')
+															   and not exists (select 1 from compare_result where status = 0)
+															   and nvl(pe.last_prp_cnt_sync_time,sysdate -1)  <![CDATA[ < ]]>   (sysdate - 10/60/24)  <!-- add by cg 十分钟之内不重复更新 -->
+	</sql>
+	 
+		<!-- ================================================================================================ -->
+		
+		<!-- 待比较对象集 逻辑参考原逻辑  -->
+		<select id="getCompareResultVoList" parameterType="map" resultMap="compareResultVOMap">
+		 	select t.id as result_id,
+		       t.source_id,
+		       t.target_id,
+		       t.data_type,
+		       s1.content  as source_content,
+		       s2.content  as target_content
+		  from compare_result t
+		 inner join compare_list s1
+		    on s1.id = t.source_id
+		 inner join compare_list s2
+		    on s2.id = t.target_id
+		 where 1 = 1
+		   and t.status = '0'
+		   and t.id <![CDATA[ >= ]]>  ${startKeyCode}
+		   and t.id  <![CDATA[ <= ]]> ${endKeyCode}
+		</select>
+		
+		<!--待结果同步对象集  逻辑参考原逻辑  -->
+		<select id="getCompareResultSyncVoList" parameterType="map" resultMap="compareResultSyncVOMap">
+		   select
+				   prp_code,
+				   type
+		    from ( 
+		     <include refid="prpCodeTypeTable"></include> 
+		     ) t
+		   where 1=1 
+		 	 	 and t.prp_code  <![CDATA[ >= ]]>  ${startKeyCode}
+		     and t.prp_code  <![CDATA[ <= ]]>  ${endKeyCode}
+		</select>
+		
+		
+		<!--  规则 --> 
+			<!--  规则计算  参考原逻辑-->
+			<select id="getProposalRuleCheckSummaryVo" resultMap="dataSummaryVoMap" 	parameterType="map">
+			   	<include refid="getSummaryPrefix" />
+			         select distinct t.prp_code as id
+			          from prp_rule_check_result t
+			           where 1=1
+			           and t.is_restore = 0 
+			           and nvl(t.status, -1) != 2
+			         <if test="startKeyCode != null">
+			            and t.prp_code <![CDATA[ >= ]]>  ${startKeyCode}
+			         </if>
+			         order by t.prp_code asc
+		      <include refid="getSummarySubfix" />
+			</select>
+
+</mapper>
